@@ -157,36 +157,49 @@
     document.getElementById('dateInput').value = now.toISOString().slice(0, 16);
 
     function sendDataToBot() {
-      const cityId = document.getElementById('citySelect').value;
-      const rawDate = document.getElementById('dateInput').value;
+  const cityId = document.getElementById('citySelect').value;
+  const rawDate = document.getElementById('dateInput').value;
 
-      if (!rawDate) {
-        tg.showAlert("Пожалуйста, укажите дату и время.");
-        return;
-      }
+  if (!rawDate) {
+    tg.showAlert("Пожалуйста, укажите дату и время.");
+    return;
+  }
 
-      const formattedDate = rawDate.replace('T', ' '); 
+  const formattedDate = rawDate.replace('T', ' ');
 
-      const payload = {
-        city: cityId,
-        date: formattedDate,
-        chat_id: tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : "872704216" 
-      };
+  // Собираем данные для отправки
+  const payload = {
+    city: cityId,
+    date: formattedDate
+  };
 
-      // ВСТАВЬ СЮДА СВОЮ ССЫЛКУ ИЗ GOOGLE APPS SCRIPT (У тебя она в деплое)
-      const WEB_APP_BACKEND = "https://script.google.com/macros/s/AKfycbw6H3Z0H6G9Nq-A19F8tP8jI78w0_p1O2M-v_3D1_Your_Actual_Script_ID/exec"; 
+  // Проверяем, где открыто приложение. 
+  // Если tg.initData отсутствует (или пустой), значит это ПК или внешний браузер
+  if (!tg.initData || tg.initData === "") {
+    
+    // Сюда подставляем ID твоего чата, чтобы бот знал кому слать погоду
+    payload.chat_id = "872704216"; 
 
-      fetch(WEB_APP_BACKEND, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: "web_app_custom", data: payload })
-      }).then(() => {
-        tg.close();
-      }).catch(err => {
-        alert("Ошибка отправки: " + err);
-      });
-    }
-  </script>
-</body>
-</html>
+    // Отправляем прямой запрос на твой бэкэнд в Google Скрипты
+    fetch("https://script.google.com/macros/s/AKfycbxMK9fo74RBfZHZkWBakdHLmwJnbb-hUY5ARb25n3I4-VDemjHvUVokt0Fj7On1uUn_uQ/exec", {
+      method: "POST",
+      mode: "no-cors", // Чтобы браузер не ругался на правила безопасности
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        type: "web_app_custom",
+        data: payload
+      })
+    }).then(() => {
+      // Закрываем окно Web App после успешной отправки
+      tg.close();
+    }).catch(err => {
+      alert("Ошибка отправки: " + err);
+    });
+
+  } else {
+    // Если открыто с телефона — используем стандартный быстрый метод Телеграма
+    tg.sendData(JSON.stringify(payload));
+  }
+}
