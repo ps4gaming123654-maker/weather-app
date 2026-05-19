@@ -152,7 +152,7 @@
   tg.ready();
   tg.expand();
 
-  // Автоматическая установка текущей даты и времени в календарь
+  // Установка текущего времени в календарь
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
   document.getElementById('dateInput').value = now.toISOString().slice(0, 16);
@@ -167,43 +167,37 @@
     }
 
     const formattedDate = rawDate.replace('T', ' ');
+    const payload = { city: cityId, date: formattedDate };
 
-    // Сбор данных для отправки
-    const payload = {
-      city: cityId,
-      date: formattedDate
-    };
+    // ОТПРАВКА НА ПК (Через прямой сетевой запрос)
+    // ВСТАВЬ СВОЮ ССЫЛКУ ИЗ ШАГА 2 МЕЖДУ КАВЫЧКАМИ НА СТРОЧКЕ НИЖЕ:
+    const webAppUrl = "ВСТАВЬ_СЮДА_НОВУЮ_ССЫЛКУ_ИЗ_GOOGLE_APPS_SCRIPT";
 
-    // Проверяем, открыто ли на ПК/в браузере (через отсутствие initData)
-    if (!tg.initData || tg.initData === "") {
-      
-      // Твой Telegram ID, куда бот пришлет погоду
-      payload.chat_id = "872704216"; 
+    payload.chat_id = "872704216"; // Твой Telegram ID
 
-      // Прямой POST-запрос на бэкэнд Google Скриптов
-      fetch("https://script.google.com/macros/s/AKfycbxMK9fo74RBFZHZkWBakdHLmwJnbb-hUY5ARb25n3I4-VDemjHvUVokt0Fj7On1uN_uQ/exec", {
-        method: "POST",
-        mode: "no-cors",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          type: "web_app_custom",
-          data: payload
-        })
-      })
-      .then(() => {
-        // Плавно закрываем окно Web App после отправки
-        tg.close();
-      })
-      .catch(err => {
-        alert("Ошибка сети: " + err);
-      });
+    fetch(webAppUrl, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "web_app_custom", data: payload })
+    })
+    .then(() => {
+      // Пытаемся закрыть окно на ПК
+      tg.close();
+    })
+    .catch(err => {
+      console.log("Ошибка сети: " + err);
+    });
 
-    } else {
-      // Если открыто на смартфоне — используем нативный метод Telegram
-      tg.sendData(JSON.stringify(payload));
+    // ОТПРАВКА ДЛЯ СМАРТФОНОВ (Нативный метод)
+    try {
+      tg.sendData(JSON.stringify({ city: cityId, date: formattedDate }));
+    } catch(e) {
+      console.log("Нативная отправка не поддерживается на ПК, используем fetch");
     }
+
+    // Принудительное закрытие окна для всех платформ через секунду
+    setTimeout(() => { tg.close(); }, 1000);
   }
 </script>
 </body>
