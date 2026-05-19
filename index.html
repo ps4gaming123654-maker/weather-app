@@ -147,59 +147,64 @@
     <div class="footer">Данные синхронизированы с Open-Meteo API</div>
   </div>
 
-  <script>
-    const tg = window.Telegram.WebApp;
-    tg.ready();
-    tg.expand();
+ <script>
+  const tg = window.Telegram.WebApp;
+  tg.ready();
+  tg.expand();
 
-    const now = new Date();
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-    document.getElementById('dateInput').value = now.toISOString().slice(0, 16);
+  // Автоматическая установка текущей даты и времени в календарь
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  document.getElementById('dateInput').value = now.toISOString().slice(0, 16);
 
-    function sendDataToBot() {
-  const cityId = document.getElementById('citySelect').value;
-  const rawDate = document.getElementById('dateInput').value;
+  function sendDataToBot() {
+    const cityId = document.getElementById('citySelect').value;
+    const rawDate = document.getElementById('dateInput').value;
 
-  if (!rawDate) {
-    tg.showAlert("Пожалуйста, укажите дату и время.");
-    return;
-  }
+    if (!rawDate) {
+      tg.showAlert("Пожалуйста, укажите дату и время.");
+      return;
+    }
 
-  const formattedDate = rawDate.replace('T', ' ');
+    const formattedDate = rawDate.replace('T', ' ');
 
-  // Собираем данные для отправки
-  const payload = {
-    city: cityId,
-    date: formattedDate
-  };
+    // Сбор данных для отправки
+    const payload = {
+      city: cityId,
+      date: formattedDate
+    };
 
-  // Проверяем, где открыто приложение. 
-  // Если tg.initData отсутствует (или пустой), значит это ПК или внешний браузер
-  if (!tg.initData || tg.initData === "") {
-    
-    // Сюда подставляем ID твоего чата, чтобы бот знал кому слать погоду
-    payload.chat_id = "872704216"; 
+    // Проверяем, открыто ли на ПК/в браузере (через отсутствие initData)
+    if (!tg.initData || tg.initData === "") {
+      
+      // Твой Telegram ID, куда бот пришлет погоду
+      payload.chat_id = "872704216"; 
 
-    // Отправляем прямой запрос на твой бэкэнд в Google Скрипты
-    fetch("https://script.google.com/macros/s/AKfycbxMK9fo74RBfZHZkWBakdHLmwJnbb-hUY5ARb25n3I4-VDemjHvUVokt0Fj7On1uUn_uQ/exec", {
-      method: "POST",
-      mode: "no-cors", // Чтобы браузер не ругался на правила безопасности
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        type: "web_app_custom",
-        data: payload
+      // Прямой POST-запрос на бэкэнд Google Скриптов
+      fetch("https://script.google.com/macros/s/AKfycbxMK9fo74RBFZHZkWBakdHLmwJnbb-hUY5ARb25n3I4-VDemjHvUVokt0Fj7On1uN_uQ/exec", {
+        method: "POST",
+        mode: "no-cors",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          type: "web_app_custom",
+          data: payload
+        })
       })
-    }).then(() => {
-      // Закрываем окно Web App после успешной отправки
-      tg.close();
-    }).catch(err => {
-      alert("Ошибка отправки: " + err);
-    });
+      .then(() => {
+        // Плавно закрываем окно Web App после отправки
+        tg.close();
+      })
+      .catch(err => {
+        alert("Ошибка сети: " + err);
+      });
 
-  } else {
-    // Если открыто с телефона — используем стандартный быстрый метод Телеграма
-    tg.sendData(JSON.stringify(payload));
+    } else {
+      // Если открыто на смартфоне — используем нативный метод Telegram
+      tg.sendData(JSON.stringify(payload));
+    }
   }
-}
+</script>
+</body>
+</html>
